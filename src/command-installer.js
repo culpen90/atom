@@ -93,7 +93,13 @@ module.exports = class CommandInstaller {
       if (realpath === commandPath) return callback(null, commandName);
       this.createSymlink(fs, commandPath, destinationPath, error => {
         if (error && error.code === 'EACCES' && askForPrivilege) {
-          const fsAdmin = require('fs-admin');
+          let fsAdmin;
+          try {
+            fsAdmin = require('fs-admin');
+          } catch (error) {
+            callback(error);
+            return;
+          }
           this.createSymlink(fsAdmin, commandPath, destinationPath, error => {
             callback(error, commandName);
           });
@@ -105,11 +111,31 @@ module.exports = class CommandInstaller {
   }
 
   createSymlink(fs, sourcePath, destinationPath, callback) {
-    fs.unlink(destinationPath, error => {
-      if (error && error.code !== 'ENOENT') return callback(error);
-      fs.makeTree(path.dirname(destinationPath), error => {
-        if (error) return callback(error);
-        fs.symlink(sourcePath, destinationPath, callback);
+    let calledBack = false;
+    const safeCallback = error => {
+      if (calledBack) return;
+      calledBack = true;
+      callback(error);
+    };
+    const callFilesystem = operation => {
+      try {
+        operation();
+      } catch (error) {
+        safeCallback(error);
+      }
+    };
+
+    callFilesystem(() => {
+      fs.unlink(destinationPath, error => {
+        if (error && error.code !== 'ENOENT') return safeCallback(error);
+        callFilesystem(() => {
+          fs.makeTree(path.dirname(destinationPath), error => {
+            if (error) return safeCallback(error);
+            callFilesystem(() => {
+              fs.symlink(sourcePath, destinationPath, safeCallback);
+            });
+          });
+        });
       });
     });
   }
