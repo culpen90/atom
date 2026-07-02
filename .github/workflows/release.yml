@@ -22,10 +22,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          persist-credentials: false
+        env:
+          RELEASE_TOKEN: ${{ secrets.SEMANTIC_RELEASE_BOT_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init .
+          git remote add origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --prune --tags --force origin "+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}"
+          git checkout --force -B "${GITHUB_REF_NAME}" "refs/remotes/origin/${GITHUB_REF_NAME}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
