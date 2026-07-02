@@ -38,19 +38,8 @@ jobs:
         with:
           node-version: 22.14.0
 
-      - name: Bootstrap fresh release history
-        env:
-          RELEASE_TOKEN: ${{ secrets.SEMANTIC_RELEASE_BOT_TOKEN || github.token }}
-        run: |
-          git fetch --tags --force
-
-          if git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | grep -q .; then
-            echo "Existing semantic-release tag found; skipping bootstrap."
-            exit 0
-          fi
-
-          git tag v0.0.0
-          git push "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" v0.0.0
+      - name: Seed semantic-release baseline
+        run: node script/semantic-release/seed-release-history.js --push
 
       - name: Semantic release
         uses: cycjimmy/semantic-release-action@v6

@@ -7,7 +7,17 @@ module.exports = {
   repositoryUrl: getRepositoryUrl(),
   tagFormat: 'v${version}',
   plugins: [
-    '@semantic-release/commit-analyzer',
+    [
+      '@semantic-release/commit-analyzer',
+      {
+        releaseRules: [
+          {
+            header: '[0-9]*.[0-9]*.[0-9]*-dev',
+            release: 'minor'
+          }
+        ]
+      }
+    ],
     '@semantic-release/release-notes-generator',
     [
       '@semantic-release/changelog',
