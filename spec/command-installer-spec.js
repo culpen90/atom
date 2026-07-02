@@ -1,4 +1,5 @@
 const path = require('path');
+const Module = require('module');
 const fs = require('fs-plus');
 const temp = require('temp').track();
 const CommandInstaller = require('../src/command-installer');
@@ -216,6 +217,64 @@ describe('CommandInstaller on #darwin', () => {
           done();
         });
       });
+    });
+  });
+
+  describe('when the privileged filesystem backend cannot be loaded', () => {
+    beforeEach(() => {
+      installer = new CommandInstaller();
+      installer.initialize('2.0.2');
+    });
+
+    it('reports the error through the callback', () => {
+      const expectedError = new Error('missing native module');
+      const permissionError = new Error('permission denied');
+      permissionError.code = 'EACCES';
+      const loadModule = Module._load;
+
+      spyOn(installer, 'createSymlink').andCallFake(
+        (fileSystem, sourcePath, destinationPath, callback) => {
+          callback(permissionError);
+        }
+      );
+      spyOn(Module, '_load').andCallFake(function(request) {
+        if (request === 'fs-admin') throw expectedError;
+        return loadModule.apply(this, arguments);
+      });
+
+      waitsFor(done => {
+        installer.installCommand(atomBinPath, 'atom', true, error => {
+          expect(error).toBe(expectedError);
+          done();
+        });
+      });
+    });
+  });
+
+  describe('when the filesystem backend throws synchronously', () => {
+    beforeEach(() => {
+      installer = new CommandInstaller();
+    });
+
+    it('reports the error through the callback', () => {
+      const expectedError = new Error('missing native module');
+      const throwingFs = {
+        unlink() {
+          throw expectedError;
+        }
+      };
+      let actualError;
+
+      installer.createSymlink(
+        throwingFs,
+        path.join(installationPath, 'source'),
+        path.join(installationPath, 'destination'),
+        error => {
+          actualError = error;
+        }
+      );
+
+      expect(actualError).toBe(expectedError);
     });
   });
 });
