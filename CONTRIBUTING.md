@@ -218,6 +218,7 @@ While the prerequisites above must be satisfied prior to having your pull reques
 * Use the present tense ("Add feature" not "Added feature")
 * Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
 * Limit the first line to 72 characters or less
+* Use Conventional Commit prefixes for release-worthy changes: `fix:` for patch releases, `feat:` for minor releases, and `!` or a `BREAKING CHANGE:` footer for major releases
 * Reference issues and pull requests liberally after the first line
 * When only changing documentation, include `[ci skip]` in the commit title
 * Consider starting the commit message with an applicable emoji:
